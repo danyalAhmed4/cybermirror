@@ -9,7 +9,7 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
 

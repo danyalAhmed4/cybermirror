@@ -105,7 +105,7 @@ Register a normal user in MySQL via `/register`, then log in. This is separate f
    python -m attacker.xss_attack
    python -m attacker.session_attacks
    ```
-4. **Insights** — Console → Alerts / Sessions / Evaluation  
+4. **Insights** — Console → Alerts / Sessions / Evaluation · or open **Attack Viz** at `/viz`  
 5. **Feedback** — clear logs, tweak thresholds in `.env`, or retrain — then repeat
 
 ```powershell
