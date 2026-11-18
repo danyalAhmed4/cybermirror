@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attack Viz — CyberMirror</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('viz.static', filename='viz.css') }}">
+</head>
+<body class="viz-body">
+  <div class="viz-shell">
+    <aside class="viz-sidebar">
+      <div class="viz-brand">
+        <a href="{{ url_for('viz.index') }}">CyberMirror</a>
+        <span class="viz-brand-sub">Attack Viz</span>
+      </div>
+      <p class="viz-side-note">Replay sandboxed simulation events. No live attacks from this UI.</p>
+
+      <h2 class="viz-side-heading">Sample runs</h2>
+      <ul class="viz-run-list" id="sampleList"></ul>
+
+      <h2 class="viz-side-heading">Recorded runs</h2>
+      <ul class="viz-run-list" id="recordedList">
+        <li class="muted empty-hint">None yet — use --events-file</li>
+      </ul>
+
+      <div class="viz-sidebar-foot">
+        <a href="{{ url_for('dashboard.overview') }}">SOC Console</a>
+        <a href="{{ url_for('auth.index') }}">OrbitMart</a>
+      </div>
+    </aside>
+
+    <div class="viz-main">
+      <header class="viz-topbar">
+        <div>
+          <h1 class="viz-page-title" id="runTitle">Select a run</h1>
+          <p class="viz-page-sub" id="runSub">Load a sample to demo without running attackers.</p>
+        </div>
+        <div class="viz-topbar-meta">
+          <span class="pill" id="suitePill">SUITE —</span>
+          <span class="pill pill-muted" id="statusPill">IDLE</span>
+        </div>
+      </header>
+
+      <section class="viz-summary" id="summaryCards" aria-label="Run summary">
+        <article class="sum-card"><span class="sum-label">Steps</span><strong id="sumSteps">—</strong></article>
+        <article class="sum-card"><span class="sum-label">Duration</span><strong id="sumDuration">—</strong></article>
+        <article class="sum-card"><span class="sum-label">Commands</span><strong id="sumCommands">—</strong></article>
+        <article class="sum-card"><span class="sum-label">Outcome</span><strong id="sumOutcome">—</strong></article>
+        <article class="sum-card sum-wide"><span class="sum-label">Score</span><pre id="sumScore" class="sum-score">—</pre></article>
+      </section>
+
+      <section class="viz-transport" aria-label="Replay controls">
+        <button type="button" class="btn" id="btnPlay" title="Play / Pause">Play</button>
+        <button type="button" class="btn btn-ghost" id="btnBack" title="Step back">◀</button>
+        <button type="button" class="btn btn-ghost" id="btnFwd" title="Step forward">▶</button>
+        <button type="button" class="btn btn-ghost" id="btnReset" title="Reset">Reset</button>
+        <label class="speed-wrap">
+          Speed
+          <input type="range" id="speedRange" min="0.25" max="4" step="0.25" value="1">
+          <span id="speedLabel">1×</span>
+        </label>
+        <div class="progress-wrap">
+          <input type="range" id="progressRange" min="0" max="0" value="0">
+          <span id="progressLabel">0 / 0</span>
+        </div>
+      </section>
+
+      <div class="viz-grid">
+        <section class="panel" aria-label="Attack path diagram">
+          <header class="panel-head">
+            <h2>Attack path</h2>
+            <span class="muted" id="edgeLabel">—</span>
+          </header>
+          <div class="graph-stage" id="graphStage">
+            <svg id="graphSvg" viewBox="0 0 640 280" role="img" aria-label="System diagram"></svg>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="Current step detail">
+          <header class="panel-head">
+            <h2>Current step</h2>
+            <span class="pill pill-sm" id="eventPill">—</span>
+          </header>
+          <dl class="step-detail">
+            <div><dt>Command</dt><dd><code id="stepCommand">—</code></dd></div>
+            <div><dt>Action</dt><dd id="stepAction">—</dd></div>
+            <div><dt>Result</dt><dd><pre id="stepResult">—</pre></dd></div>
+          </dl>
+          <div class="vuln-card" id="vulnCard">
+            <h3 id="vulnTitle">Weakness</h3>
+            <p id="vulnWeakness">Select a step to see which weakness it exploits.</p>
+            <p class="muted" id="vulnSink"></p>
+            <p id="vulnMitigation"></p>
+            <span class="cwe" id="vulnCwe"></span>
+          </div>
+        </section>
+
+        <section class="panel panel-span" aria-label="Event log">
+          <header class="panel-head">
+            <h2>Live log</h2>
+            <div class="log-tools">
+              <input type="search" id="logSearch" placeholder="Search logs…" autocomplete="off">
+              <select id="logFilter">
+                <option value="all">All events</option>
+                <option value="command">command</option>
+                <option value="action">action</option>
+                <option value="log">log</option>
+                <option value="result">result</option>
+                <option value="score">score</option>
+                <option value="mode">mode</option>
+              </select>
+            </div>
+          </header>
+          <div class="log-panel" id="logPanel" role="log" aria-live="polite"></div>
+        </section>
+
+        <section class="panel panel-span" id="compareSection" aria-label="Vulnerable vs mitigated">
+          <header class="panel-head">
+            <h2>Vulnerable vs mitigated</h2>
+            <span class="muted">OFF (vulnerable) · MONITOR (observe) · BLOCK (mitigated)</span>
+          </header>
+          <div class="compare-grid" id="compareGrid">
+            <p class="muted">Load an experiment run to compare detection modes.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script src="{{ url_for('viz.static', filename='viz.js') }}" defer></script>
+</body>
+</html>

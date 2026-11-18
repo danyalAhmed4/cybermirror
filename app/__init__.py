@@ -33,11 +33,14 @@ def create_app(config_class=Config):
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
     from app.routes.vulnerable import vulnerable_bp
+    from viz.routes import viz_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     # Always register; route checks runtime enable flag from monitor.db
     app.register_blueprint(vulnerable_bp)
+    # Attack simulation replay UI (reads local JSONL only)
+    app.register_blueprint(viz_bp)
 
     @app.context_processor
     def _inject_lab_flags():

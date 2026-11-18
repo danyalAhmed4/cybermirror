@@ -18,8 +18,22 @@ from typing import Optional
 import requests
 
 try:
+    from attacker.events import (
+        add_events_arg,
+        close_events,
+        configure_events,
+        emit,
+        vuln_for,
+    )
     from attacker.normal_traffic import DEFAULT_BASE_URL, assert_safe_base_url
 except ImportError:
+    from events import (
+        add_events_arg,
+        close_events,
+        configure_events,
+        emit,
+        vuln_for,
+    )
     from normal_traffic import DEFAULT_BASE_URL, assert_safe_base_url
 
 SENSITIVE_PATHS = ["/home", "/search", "/logout"]
@@ -38,6 +52,8 @@ def _send(
     counts: Counter,
     forwarded_for: Optional[str] = None,
     user_agent: Optional[str] = None,
+    action: Optional[str] = None,
+    command: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     headers = dict(kwargs.pop("headers", {}) or {})
@@ -48,8 +64,27 @@ def _send(
         headers["User-Agent"] = user_agent
     kwargs.setdefault("timeout", 20)
     kwargs.setdefault("allow_redirects", False)
+    t0 = time.perf_counter()
     response = session.request(method, url, headers=headers, **kwargs)
+    duration_ms = (time.perf_counter() - t0) * 1000.0
     counts[response.status_code] += 1
+    emit(
+        "result",
+        command=command,
+        action=action or f"{method} {url}",
+        log=f"{method} {url} → {response.status_code} (label={label})",
+        result={
+            "method": method,
+            "url": url,
+            "status_code": response.status_code,
+            "label": label,
+            "forwarded_for": forwarded_for,
+        },
+        vulnerability=vuln_for(label),
+        edge={"from": "attacker", "to": "orbitmart", "label": label},
+        status="ok" if response.status_code < 500 else "error",
+        duration_ms=round(duration_ms, 2),
+    )
     _delay()
     return response
 
@@ -94,6 +129,14 @@ def attack_cookie_replay(base: str, counts: Counter) -> None:
     """Log in normally, then replay the cookie with a different UA + IP."""
     label = "cookie_replay"
     print(f"[{label}] login as victim")
+    emit(
+        "command",
+        command="session: cookie_replay",
+        action="Cookie replay attack",
+        log=f"[{label}] login as victim",
+        vulnerability=vuln_for(label),
+        edge={"from": "victim", "to": "orbitmart", "label": "login"},
+    )
     victim = _register_and_login(
         base,
         f"replay_user_{random.randint(1000, 9999)}",
@@ -116,6 +159,13 @@ def attack_cookie_replay(base: str, counts: Counter) -> None:
         )
 
     print(f"[{label}] replay cookie from attacker IP/UA")
+    emit(
+        "action",
+        action="Replay stolen session cookie",
+        log=f"[{label}] replay cookie from attacker IP/UA",
+        vulnerability=vuln_for(label),
+        edge={"from": "attacker", "to": "orbitmart", "label": "replay"},
+    )
     attacker = requests.Session()
     attacker.cookies.update(victim.cookies)
     for path in ("/home", "/search?q=laptop", "/home", "/home"):
@@ -135,6 +185,13 @@ def attack_sidejacking(base: str, counts: Counter) -> None:
     """Same cookie from a second client hitting sensitive endpoints."""
     label = "sidejacking"
     print(f"[{label}] victim session")
+    emit(
+        "command",
+        command="session: sidejacking",
+        action="Sidejacking attack",
+        log=f"[{label}] victim session",
+        vulnerability=vuln_for(label),
+    )
     victim = _register_and_login(
         base,
         f"sidejack_{random.randint(1000, 9999)}",
@@ -156,6 +213,13 @@ def attack_sidejacking(base: str, counts: Counter) -> None:
         )
 
     print(f"[{label}] second client uses stolen cookie on sensitive paths")
+    emit(
+        "action",
+        action="Use stolen cookie on sensitive paths",
+        log=f"[{label}] second client uses stolen cookie on sensitive paths",
+        vulnerability=vuln_for(label),
+        edge={"from": "attacker", "to": "orbitmart", "label": "sidejack"},
+    )
     thief = requests.Session()
     thief.cookies.update(victim.cookies)
     for path in list(SENSITIVE_PATHS) + ["/home"]:
@@ -189,6 +253,13 @@ def attack_session_fixation(base: str, counts: Counter) -> None:
     """
     label = "session_fixation"
     print(f"[{label}] attacker plants anonymous session cookie")
+    emit(
+        "command",
+        command="session: session_fixation",
+        action="Session fixation attack",
+        log=f"[{label}] attacker plants anonymous session cookie",
+        vulnerability=vuln_for(label),
+    )
     attacker = requests.Session()
     attacker_ip = "10.30.9.9"
     victim_ip = "10.30.1.1"
@@ -228,6 +299,13 @@ def attack_session_fixation(base: str, counts: Counter) -> None:
         victim.cookies.clear()
         victim.cookies.set("session", planted)
     print(f"[{label}] victim logs in with planted cookie")
+    emit(
+        "action",
+        action="Victim authenticates with planted session",
+        log=f"[{label}] victim logs in with planted cookie",
+        vulnerability=vuln_for(label),
+        edge={"from": "victim", "to": "orbitmart", "label": "fixed-login"},
+    )
     _send(
         victim,
         "POST",
@@ -254,6 +332,14 @@ def attack_session_prediction(base: str, counts: Counter) -> None:
     """Send many guessed session IDs per minute."""
     label = "session_prediction"
     print(f"[{label}] spray guessed session cookies")
+    emit(
+        "command",
+        command="session: session_prediction",
+        action="Session ID spray / prediction",
+        log=f"[{label}] spray guessed session cookies",
+        vulnerability=vuln_for(label),
+        edge={"from": "attacker", "to": "orbitmart", "label": "spray"},
+    )
     ua = "CyberMirror-SessionPredict/1.0"
     for i in range(40):
         guess = requests.Session()
@@ -273,6 +359,13 @@ def attack_session_prediction(base: str, counts: Counter) -> None:
 def normal_sessions(base: str, counts: Counter, n_users: int = 3) -> None:
     label = "normal"
     print(f"[{label}] benign multi-request sessions")
+    emit(
+        "command",
+        command="session: normal baseline",
+        action="Benign multi-request sessions",
+        log=f"[{label}] benign multi-request sessions",
+        vulnerability=vuln_for(label),
+    )
     for i in range(n_users):
         ua = f"Mozilla/5.0 (NormalUser/{i})"
         ip = f"10.50.0.{10 + i}"
@@ -326,6 +419,13 @@ def run(base_url: str) -> Counter:
     print("Note: set LAB_TRUST_FORWARDED_FOR=True")
     print("Note: session_fixation needs SESSION_REGENERATE_ON_LOGIN=False")
     print()
+    emit(
+        "log",
+        log=(
+            f"Target={base}; LAB_TRUST_FORWARDED_FOR=True recommended; "
+            "session_fixation needs SESSION_REGENERATE_ON_LOGIN=False"
+        ),
+    )
 
     normal_sessions(base, counts)
     attack_cookie_replay(base, counts)
@@ -338,11 +438,25 @@ def run(base_url: str) -> Counter:
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Lab session-hijack traffic generator.")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    add_events_arg(parser)
     args = parser.parse_args(argv)
+    configure_events(
+        args.events_file,
+        suite="session",
+        base_url=args.base_url,
+        meta={"cli": "python -m attacker.session_attacks"},
+    )
+    emit(
+        "command",
+        command=f"python -m attacker.session_attacks --base-url {args.base_url}",
+        action="Launch session-hijack suite",
+        vulnerability=vuln_for("cookie_replay"),
+    )
     try:
         counts = run(args.base_url)
     except requests.RequestException as exc:
         print(f"Request failed: {exc}", file=sys.stderr)
+        close_events(status="failed", score={"error": str(exc)})
         return 1
 
     print()
@@ -350,6 +464,14 @@ def main(argv: Optional[list[str]] = None) -> int:
     print(f"Requests sent: {sum(counts.values())}")
     for code in sorted(counts):
         print(f"  {code}: {counts[code]}")
+
+    score = {
+        "requests": sum(counts.values()),
+        "status_codes": dict(counts),
+        "outcome": "traffic_sent",
+    }
+    emit("score", score=score, action="Session suite summary", status="completed")
+    close_events(status="completed", score=score)
     return 0
 
 

@@ -25,3 +25,7 @@ app/monitoring/monitor.db
 
 # Optional local exports
 training/live_session_features.csv
+
+# Recorded viz runs (samples live under viz/sample_runs/)
+results/runs/*.jsonl
+!results/runs/.gitkeep

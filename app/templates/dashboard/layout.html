@@ -27,6 +27,7 @@
         <a class="{% if active == 'sessions' %}active{% endif %}" href="{{ url_for('dashboard.sessions_page') }}">Sessions</a>
         <a class="{% if active == 'control' %}active{% endif %}" href="{{ url_for('dashboard.control_page') }}">Control</a>
         <a class="{% if active == 'evaluation' %}active{% endif %}" href="{{ url_for('dashboard.evaluation_page') }}">Evaluation</a>
+        <a href="{{ url_for('viz.index') }}">Attack Viz</a>
       </nav>
       <div class="dash-sidebar-foot">
         <a href="{{ url_for('auth.index') }}" target="_blank" rel="noopener">Open OrbitMart twin</a>

@@ -28,8 +28,17 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from app.monitoring.store import get_store  # noqa: E402
+from attacker.events import (  # noqa: E402
+    add_events_arg,
+    close_events,
+    configure_events,
+    emit,
+    mitigation_for_mode,
+    vuln_for,
+)
 
 RESULTS_DIR = os.path.join(_ROOT, "results")
+RUNS_DIR = os.path.join(RESULTS_DIR, "runs")
 DEFAULT_DB = os.path.join(_ROOT, "app", "monitoring", "monitor.db")
 EVAL_CSV = os.path.join(RESULTS_DIR, "evaluation.csv")
 EVAL_JSON = os.path.join(RESULTS_DIR, "evaluation.json")
@@ -417,6 +426,16 @@ def run_experiment(base_url: str, db_path: str, *, quick: bool = True) -> dict[s
 
     for mode in modes:
         print(f"\n===== MODE {mode} =====")
+        emit(
+            "mode",
+            mode=mode,
+            action=f"Switch detection mode → {mode}",
+            command=f"set_detection_mode({mode})",
+            log=f"===== MODE {mode} =====",
+            vulnerability=vuln_for("sqli"),
+            mitigation=mitigation_for_mode(mode),
+            edge={"from": "soc", "to": "detector", "label": mode},
+        )
         store.set_detection_mode(mode)
         store.clear_logs()
         time.sleep(0.3)
@@ -425,7 +444,23 @@ def run_experiment(base_url: str, db_path: str, *, quick: bool = True) -> dict[s
         if mode == "OFF":
             vuln_probe = _probe_vuln_page(base_url)
             print(f"  vuln probe: {vuln_probe}")
+            emit(
+                "result",
+                action="Vulnerable /search probe (OFF)",
+                log=f"vuln probe: {vuln_probe}",
+                result=vuln_probe,
+                vulnerability=vuln_for("sqli"),
+                mitigation=mitigation_for_mode("OFF"),
+                edge={"from": "attacker", "to": "lab_db", "label": "probe"},
+            )
 
+        emit(
+            "command",
+            command="replay labeled attack suites",
+            action=f"Replay traffic under {mode}",
+            log=f"Running traffic suite in mode {mode}",
+            mitigation=mitigation_for_mode(mode),
+        )
         _run_traffic(base_url, quick=quick)
         time.sleep(0.5)
 
@@ -438,6 +473,24 @@ def run_experiment(base_url: str, db_path: str, *, quick: bool = True) -> dict[s
                     "execute injected SQL against lab_vuln.db."
                 )
         by_mode[mode] = metrics
+        emit(
+            "score",
+            mode=mode,
+            action=f"Score mode {mode}",
+            score={
+                "mode": mode,
+                "false_alarm_rate": metrics["totals"].get("false_alarm_rate"),
+                "alerts": metrics["totals"].get("alerts"),
+                "sqli_recall": (metrics["per_attack_type"].get("sqli") or {}).get(
+                    "recall"
+                ),
+                "xss_recall": (metrics["per_attack_type"].get("xss") or {}).get(
+                    "recall"
+                ),
+            },
+            mitigation=mitigation_for_mode(mode),
+            status="completed",
+        )
 
     monitor_block = by_mode.get("MONITOR", {})
     return {
@@ -642,6 +695,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         default=True,
         help="Smaller normal-traffic sample (default on).",
     )
+    add_events_arg(p)
     return p.parse_args(argv)
 
 
@@ -649,6 +703,30 @@ def main(argv: Optional[list[str]] = None) -> int:
     # Fix accidental bad import if store lacks LAB_VULN_DB_PATH
     args = parse_args(argv)
     os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(RUNS_DIR, exist_ok=True)
+
+    events_path = args.events_file
+    if events_path is None and args.run_experiment:
+        # Auto-record experiment runs for /viz history when flag omitted? No —
+        # keep CLI quiet unless --events-file is set (acceptance: unchanged default).
+        pass
+
+    suite = "experiment" if args.run_experiment else "evaluate_db"
+    configure_events(
+        events_path,
+        suite=suite,
+        base_url=getattr(args, "base_url", ""),
+        meta={"cli": "python -m evaluation.evaluate"},
+    )
+    if events_path:
+        emit(
+            "command",
+            command=(
+                "python -m evaluation.evaluate "
+                + ("--run-experiment" if args.run_experiment else "--from-db")
+            ),
+            action="Launch evaluation",
+        )
 
     if args.run_experiment:
         host = urlparse(args.base_url).hostname
@@ -724,6 +802,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     print(f"  {MISSES_SQLI}")
     print(f"  {MISSES_XSS}")
     print(f"  {MISSES_SESSION}")
+
+    score = {
+        "primary_mode": report.get("primary_mode"),
+        "false_alarm_rate": (report.get("totals") or {}).get("false_alarm_rate"),
+        "mode_summary": report.get("mode_summary"),
+        "dataset_scores": report.get("dataset_scores"),
+        "outcome": "evaluated",
+        "paths": {"csv": csv_path, "json": json_path},
+    }
+    emit("score", score=score, action="Evaluation complete", status="completed")
+    close_events(status="completed", score=score)
     return 0
 
 

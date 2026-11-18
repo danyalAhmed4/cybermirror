@@ -114,6 +114,45 @@ python -m evaluation.evaluate --from-db
 
 Evaluation also writes miss lists under `results/misses_*.csv` for the retrain loop.
 
+## Attack Viz (simulation replay)
+
+Visual timeline of sandboxed attack simulations. The CLI still works unchanged; pass `--events-file` to also record structured JSON Lines for replay.
+
+### Demo without running attacks
+
+```powershell
+python -m app.app
+# open http://127.0.0.1:5000/viz   (or :8080 if FLASK_PORT unset)
+```
+
+Sample runs ship under `viz/sample_runs/` (SQLi, XSS, session, OFF/MONITOR/BLOCK experiment). Regenerate with:
+
+```powershell
+python viz/generate_samples.py
+```
+
+### Record a live lab run
+
+```powershell
+python -m attacker.sqli_attack --events-file results/runs/sqli_live.jsonl
+python -m attacker.xss_attack --events-file results/runs/xss_live.jsonl
+python -m attacker.session_attacks --events-file results/runs/session_live.jsonl
+python -m evaluation.evaluate --run-experiment --events-file results/runs/experiment_live.jsonl
+```
+
+Then open **Attack Viz** → Recorded runs. Each event includes command, action, log, result, score, and the weakness / mitigation callout for that step. Experiment runs unlock the **Vulnerable vs mitigated** panel (OFF vs MONITOR vs BLOCK).
+
+### Viz layout
+
+```
+viz/
+  routes.py            /viz blueprint + JSON APIs
+  static/              viz.css / viz.js
+  templates/viz/       replay UI
+  sample_runs/         offline demo JSONL
+  generate_samples.py  rebuild sample datasets
+```
+
 ## Project layout
 
 ```
@@ -121,9 +160,10 @@ cybermirror/
   app/                 Flask app + monitoring + console
   models/              Saved .joblib detectors
   training/            Offline training scripts + datasets
-  attacker/            Normal + attack traffic generators
+  attacker/            Normal + attack traffic generators (+ optional --events-file)
   evaluation/          Score labeled runs → results/
-  results/             evaluation.csv / evaluation.json / misses_*.csv
+  viz/                 Attack simulation replay UI (/viz)
+  results/             evaluation.csv / evaluation.json / misses_*.csv / runs/
   .env                 Local secrets (never commit)
 ```
 

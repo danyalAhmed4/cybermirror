@@ -16,9 +16,23 @@ try:
         load_sqli_attack_payloads,
         load_sqli_normal_queries,
     )
+    from attacker.events import (
+        add_events_arg,
+        close_events,
+        configure_events,
+        emit,
+        vuln_for,
+    )
     from attacker.normal_traffic import DEFAULT_BASE_URL, assert_safe_base_url
 except ImportError:  # running as `python attacker/sqli_attack.py`
     from dataset_payloads import load_sqli_attack_payloads, load_sqli_normal_queries
+    from events import (
+        add_events_arg,
+        close_events,
+        configure_events,
+        emit,
+        vuln_for,
+    )
     from normal_traffic import DEFAULT_BASE_URL, assert_safe_base_url
 
 ATTACK_LABEL = "sqli"
@@ -87,14 +101,34 @@ def _send(
     *,
     label: str,
     counts: Counter,
+    action: Optional[str] = None,
+    command: Optional[str] = None,
     **kwargs,
 ) -> requests.Response:
     headers = kwargs.pop("headers", {})
     headers = {**headers, "X-Test-Label": label}
     kwargs.setdefault("timeout", 20)
     kwargs.setdefault("allow_redirects", False)
+    t0 = time.perf_counter()
     response = session.request(method, url, headers=headers, **kwargs)
+    duration_ms = (time.perf_counter() - t0) * 1000.0
     counts[response.status_code] += 1
+    emit(
+        "result",
+        command=command,
+        action=action or f"{method} {url}",
+        log=f"{method} {url} → {response.status_code} (label={label})",
+        result={
+            "method": method,
+            "url": url,
+            "status_code": response.status_code,
+            "label": label,
+        },
+        vulnerability=vuln_for(label if not label.startswith("sqli") else "sqli"),
+        edge={"from": "attacker", "to": "orbitmart", "label": label},
+        status="ok" if response.status_code < 500 else "error",
+        duration_ms=round(duration_ms, 2),
+    )
     _short_delay()
     return response
 
@@ -125,38 +159,77 @@ def run_attacks(base_url: str) -> tuple[Counter, Counter]:
     )
     print(f"Normal searches from training CSV: {len(normal_search)}")
     print()
+    emit(
+        "log",
+        log=(
+            f"Target={base}; payloads={len(sqli_payloads)} unique "
+            f"→ {len(attack_payloads)} compact/padded; normals={len(normal_search)}"
+        ),
+        vulnerability=vuln_for("sqli"),
+    )
 
     # Attack traffic on OrbitMart catalog + login (same sinks, dataset strings)
     for style, payload in attack_payloads:
         label = f"sqli_{style}"
+        cmd = f'GET /search?q={payload!r}'
         print(f"[sqli/{style}] search q={payload!r}")
+        emit(
+            "command",
+            command=cmd,
+            action=f"SQLi catalog search ({style})",
+            log=f"[sqli/{style}] search q={payload!r}",
+            vulnerability=vuln_for("sqli"),
+            edge={"from": "attacker", "to": "lab_db", "label": "inject"},
+        )
         _send(
             session,
             "GET",
             f"{base}/search",
             label=label,
             counts=attack_counts,
+            command=cmd,
+            action=f"SQLi catalog search ({style})",
             params={"q": payload},
         )
 
+        cmd_login = f"POST /login username={payload!r}"
         print(f"[sqli/{style}] login username={payload!r}")
+        emit(
+            "command",
+            command=cmd_login,
+            action=f"SQLi-shaped login username ({style})",
+            log=f"[sqli/{style}] login username={payload!r}",
+            vulnerability=vuln_for("sqli_login"),
+        )
         _send(
             session,
             "POST",
             f"{base}/login",
             label=label,
             counts=attack_counts,
+            command=cmd_login,
+            action=f"SQLi-shaped login username ({style})",
             data={"username": payload, "password": "AttackPass123!"},
         )
 
     for term in normal_search:
+        cmd = f"GET /search?q={term!r}"
         print(f"[normal] search q={term!r}")
+        emit(
+            "command",
+            command=cmd,
+            action="Benign catalog search",
+            log=f"[normal] search q={term!r}",
+            vulnerability=vuln_for("normal"),
+        )
         _send(
             session,
             "GET",
             f"{base}/search",
             label=NORMAL_LABEL,
             counts=normal_counts,
+            command=cmd,
+            action="Benign catalog search",
             params={"q": term},
         )
 
@@ -172,15 +245,29 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         default=DEFAULT_BASE_URL,
         help=f"CyberMirror base URL (default: {DEFAULT_BASE_URL})",
     )
+    add_events_arg(parser)
     return parser.parse_args(argv)
 
 
 def main(argv: Optional[list[str]] = None) -> int:
     args = parse_args(argv)
+    configure_events(
+        args.events_file,
+        suite="sqli",
+        base_url=args.base_url,
+        meta={"cli": "python -m attacker.sqli_attack"},
+    )
+    emit(
+        "command",
+        command=f"python -m attacker.sqli_attack --base-url {args.base_url}",
+        action="Launch SQLi attack suite",
+        vulnerability=vuln_for("sqli"),
+    )
     try:
         attack_counts, normal_counts = run_attacks(args.base_url)
     except requests.RequestException as exc:
         print(f"Request failed: {exc}", file=sys.stderr)
+        close_events(status="failed", score={"error": str(exc)})
         return 1
 
     print()
@@ -196,6 +283,16 @@ def main(argv: Optional[list[str]] = None) -> int:
     print("Status codes:")
     for code in sorted(normal_counts):
         print(f"  {code}: {normal_counts[code]}")
+
+    score = {
+        "attack_requests": sum(attack_counts.values()),
+        "normal_requests": sum(normal_counts.values()),
+        "attack_status_codes": dict(attack_counts),
+        "normal_status_codes": dict(normal_counts),
+        "outcome": "traffic_sent",
+    }
+    emit("score", score=score, action="SQLi suite summary", status="completed")
+    close_events(status="completed", score=score)
     return 0
 
 
