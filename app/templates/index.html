@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}OrbitMart — Cloud tools marketplace{% endblock %}
+{% block main_class %}om-main om-flush{% endblock %}
+{% block content %}
+<section class="om-hero" aria-label="OrbitMart">
+  <div class="om-hero-inner">
+    <p class="om-hero-brand">Orbit<span>Mart</span></p>
+    <h1>Cloud tools your team can deploy today.</h1>
+    <p>Browse licenses, search the catalog, and manage your workspace account — a real storefront surface for the CyberMirror lab twin.</p>
+    <div class="om-actions">
+      {% if vulnerable_page_enabled %}
+        <a class="om-btn" href="{{ url_for('vulnerable.search') }}">Browse catalog</a>
+      {% endif %}
+      {% if session.get('logged_in') %}
+        <a class="om-btn om-btn-ghost" href="{{ url_for('auth.home') }}">Go to account</a>
+      {% else %}
+        <a class="om-btn om-btn-ghost" href="{{ url_for('auth.register') }}">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="om-section">
+  <h2>Featured catalog</h2>
+  <p class="om-muted">Sample inventory used by product search. Queries hit the lab catalog database.</p>
+  <ul class="om-catalog">
+    <li>
+      <h3>Nebula CI Runner</h3>
+      <p>Parallel build minutes for cloud pipelines.</p>
+      <span class="om-price">$49 / mo</span>
+    </li>
+    <li>
+      <h3>VaultGate SSO</h3>
+      <p>Identity broker for SaaS workspaces.</p>
+      <span class="om-price">$129 / mo</span>
+    </li>
+    <li>
+      <h3>PacketLens Pro</h3>
+      <p>Traffic analytics for staging clusters.</p>
+      <span class="om-price">$89 / mo</span>
+    </li>
+  </ul>
+</section>
+
+<footer class="om-footer">
+  <p>OrbitMart is the user-facing twin. Security operators use the separate CyberMirror console.</p>
+</footer>
+{% endblock %}

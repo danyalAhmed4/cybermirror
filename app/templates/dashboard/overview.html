@@ -1,0 +1,48 @@
+{% extends "dashboard/layout.html" %}
+{% block page_title %}Overview{% endblock %}
+{% block content %}
+<section class="stat-grid" data-dashboard-page="overview">
+  <article class="stat-card">
+    <h2>Requests</h2>
+    <p class="stat-value" id="statRequests">—</p>
+  </article>
+  <article class="stat-card">
+    <h2>Alerts</h2>
+    <p class="stat-value" id="statAlerts">—</p>
+  </article>
+  <article class="stat-card">
+    <h2>Mode</h2>
+    <p class="stat-value" id="statMode">—</p>
+  </article>
+  <article class="stat-card">
+    <h2>Avg detect</h2>
+    <p class="stat-value" id="statDetectMs">—</p>
+  </article>
+</section>
+
+<div class="empty-guide" id="overviewEmpty" hidden>
+  <h2>No twin traffic yet</h2>
+  <p class="muted">OrbitMart is the user website. Enable its catalog, set MONITOR, then generate traffic so this SOC overview fills with requests and alerts.</p>
+  <ol>
+    <li>Control → <strong>MONITOR</strong> + enable lab catalog target</li>
+    <li>Open OrbitMart catalog or run <code>attacker/</code> scripts</li>
+    <li>Watch <strong>Alerts</strong> and <strong>Evaluation</strong> for incident evidence</li>
+  </ol>
+</div>
+
+
+<section class="chart-grid">
+  <article class="dash-card">
+    <h2>Requests vs alerts over time</h2>
+    <div class="chart-wrap">
+      <canvas id="chartTimeline" height="140"></canvas>
+    </div>
+  </article>
+  <article class="dash-card">
+    <h2>Alerts by attack type</h2>
+    <div class="chart-wrap">
+      <canvas id="chartByType" height="140"></canvas>
+    </div>
+  </article>
+</section>
+{% endblock %}

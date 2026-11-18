@@ -1,0 +1,27 @@
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Local / temp scratch
+_tmp_*.py
+*.log
+.DS_Store
+Thumbs.db
+
+# Runtime DBs (recreated by app / scripts)
+lab_vuln.db
+app/monitoring/monitor.db
+
+# Optional local exports
+training/live_session_features.csv

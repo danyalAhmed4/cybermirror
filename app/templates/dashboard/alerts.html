@@ -1,0 +1,39 @@
+{% extends "dashboard/layout.html" %}
+{% block page_title %}Alerts{% endblock %}
+{% block content %}
+<section class="dash-card" data-dashboard-page="alerts">
+  <div class="table-toolbar">
+    <div class="toolbar-group">
+      <label for="alertTypeFilter">Filter by type</label>
+      <select id="alertTypeFilter">
+        <option value="">All types</option>
+      </select>
+    </div>
+    <div class="toolbar-group">
+      <label for="alertSort">Sort by time</label>
+      <select id="alertSort">
+        <option value="desc">Newest first</option>
+        <option value="asc">Oldest first</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dash-table" id="alertsTable">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>IP</th>
+          <th>Attack type</th>
+          <th>Field</th>
+          <th>Probability</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

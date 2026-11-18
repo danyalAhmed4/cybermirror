@@ -1,0 +1,5 @@
+Task,Variant,BestModel,Accuracy,F1
+Binary,old_full_features,XGBoost,0.99325,0.993247831257814
+Binary,new_app_features,XGBoost,0.978,0.9779819730551934
+Multiclass,old_full_features,XGBoost,0.983,0.9829721910133328
+Multiclass,new_app_features,XGBoost,0.9156875,0.9159148163574223

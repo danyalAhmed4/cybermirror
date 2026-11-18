@@ -1,0 +1,23 @@
+{% extends "dashboard/layout.html" %}
+{% block page_title %}Sessions{% endblock %}
+{% block content %}
+<section class="dash-card" data-dashboard-page="sessions">
+  <div class="table-wrap">
+    <table class="dash-table" id="sessionsTable">
+      <thead>
+        <tr>
+          <th>Session hash</th>
+          <th>Requests</th>
+          <th>IPs seen</th>
+          <th>First seen</th>
+          <th>Last seen</th>
+          <th>Predicted class</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

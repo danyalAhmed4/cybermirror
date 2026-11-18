@@ -1,0 +1,864 @@
+{
+  "generated_at": "2026-11-16T13:56:24.317258+00:00",
+  "db_path": "D:\\Users\\Daniyal Arsalan\\Desktop\\cybermirror\\app\\monitoring\\monitor.db",
+  "dataset_scores": {
+    "sqli": 0.9971,
+    "xss": 0.9938,
+    "session_binary": 0.9932,
+    "session_multiclass": 0.983
+  },
+  "primary_mode": "MONITOR",
+  "mode": "MONITOR",
+  "per_attack_type": {
+    "sqli": {
+      "attack_type": "sqli",
+      "attacks_sent": 0,
+      "caught": 0,
+      "missed": 0,
+      "alerts_raised": 0,
+      "recall": null,
+      "precision": null
+    },
+    "xss": {
+      "attack_type": "xss",
+      "attacks_sent": 0,
+      "caught": 0,
+      "missed": 0,
+      "alerts_raised": 0,
+      "recall": null,
+      "precision": null
+    },
+    "cookie_replay": {
+      "attack_type": "cookie_replay",
+      "attacks_sent": 10,
+      "caught": 10,
+      "missed": 0,
+      "alerts_raised": 0,
+      "recall": 1.0,
+      "precision": null
+    },
+    "sidejacking": {
+      "attack_type": "sidejacking",
+      "attacks_sent": 9,
+      "caught": 8,
+      "missed": 1,
+      "alerts_raised": 0,
+      "recall": 0.8888888888888888,
+      "precision": null
+    },
+    "session_fixation": {
+      "attack_type": "session_fixation",
+      "attacks_sent": 7,
+      "caught": 6,
+      "missed": 1,
+      "alerts_raised": 11,
+      "recall": 0.8571428571428571,
+      "precision": 0.36363636363636365
+    },
+    "session_prediction": {
+      "attack_type": "session_prediction",
+      "attacks_sent": 40,
+      "caught": 9,
+      "missed": 31,
+      "alerts_raised": 9,
+      "recall": 0.225,
+      "precision": 1.0
+    }
+  },
+  "totals": {
+    "requests": 114,
+    "alerts": 20,
+    "normal_requests": 48,
+    "normal_with_alert": 0,
+    "false_alarm_rate": 0.0
+  },
+  "sqli_compact_vs_padded": {
+    "compact": {
+      "style": "compact",
+      "sent": 0,
+      "caught": 0,
+      "detection_rate": null
+    },
+    "padded": {
+      "style": "padded",
+      "sent": 0,
+      "caught": 0,
+      "detection_rate": null
+    }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "normal",
+      "sqli",
+      "xss",
+      "cookie_replay",
+      "sidejacking",
+      "session_fixation",
+      "session_prediction",
+      "other"
+    ],
+    "matrix": [
+      [
+        48,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        6,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        6,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        31,
+        0,
+        0,
+        0,
+        0,
+        0,
+        9,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "vuln_page_outcomes": {
+    "tested": 0,
+    "succeeded": 0,
+    "blocked": 0
+  },
+  "misses": {
+    "sqli": [],
+    "xss": [],
+    "session": [
+      {
+        "request_id": 2648,
+        "true_label": "sidejacking",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2650,
+        "true_label": "session_fixation",
+        "path": "/register",
+        "payload_snippet": "{\"username\": \"fix_1608\", \"email\": \"fix_1608@example.com\", \"password\": \"***\"}",
+        "caught": 0
+      },
+      {
+        "request_id": 2656,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2657,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2658,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2659,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2660,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2661,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2662,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2663,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2664,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2665,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2666,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2667,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2668,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2669,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2670,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2671,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2672,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2673,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2674,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2675,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2676,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2677,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2678,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2679,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2680,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2681,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2682,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2686,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2688,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2691,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      },
+      {
+        "request_id": 2692,
+        "true_label": "session_prediction",
+        "path": "/home",
+        "payload_snippet": "{}",
+        "caught": 0
+      }
+    ]
+  },
+  "modes": {
+    "MONITOR": {
+      "mode": "MONITOR",
+      "generated_at": "2026-11-16T13:56:24.317258+00:00",
+      "db_path": "D:\\Users\\Daniyal Arsalan\\Desktop\\cybermirror\\app\\monitoring\\monitor.db",
+      "totals": {
+        "requests": 114,
+        "alerts": 20,
+        "normal_requests": 48,
+        "normal_with_alert": 0,
+        "false_alarm_rate": 0.0
+      },
+      "per_attack_type": {
+        "sqli": {
+          "attack_type": "sqli",
+          "attacks_sent": 0,
+          "caught": 0,
+          "missed": 0,
+          "alerts_raised": 0,
+          "recall": null,
+          "precision": null
+        },
+        "xss": {
+          "attack_type": "xss",
+          "attacks_sent": 0,
+          "caught": 0,
+          "missed": 0,
+          "alerts_raised": 0,
+          "recall": null,
+          "precision": null
+        },
+        "cookie_replay": {
+          "attack_type": "cookie_replay",
+          "attacks_sent": 10,
+          "caught": 10,
+          "missed": 0,
+          "alerts_raised": 0,
+          "recall": 1.0,
+          "precision": null
+        },
+        "sidejacking": {
+          "attack_type": "sidejacking",
+          "attacks_sent": 9,
+          "caught": 8,
+          "missed": 1,
+          "alerts_raised": 0,
+          "recall": 0.8888888888888888,
+          "precision": null
+        },
+        "session_fixation": {
+          "attack_type": "session_fixation",
+          "attacks_sent": 7,
+          "caught": 6,
+          "missed": 1,
+          "alerts_raised": 11,
+          "recall": 0.8571428571428571,
+          "precision": 0.36363636363636365
+        },
+        "session_prediction": {
+          "attack_type": "session_prediction",
+          "attacks_sent": 40,
+          "caught": 9,
+          "missed": 31,
+          "alerts_raised": 9,
+          "recall": 0.225,
+          "precision": 1.0
+        }
+      },
+      "sqli_compact_vs_padded": {
+        "compact": {
+          "style": "compact",
+          "sent": 0,
+          "caught": 0,
+          "detection_rate": null
+        },
+        "padded": {
+          "style": "padded",
+          "sent": 0,
+          "caught": 0,
+          "detection_rate": null
+        }
+      },
+      "vuln_page_outcomes": {
+        "tested": 0,
+        "succeeded": 0,
+        "blocked": 0
+      },
+      "confusion_matrix": {
+        "labels": [
+          "normal",
+          "sqli",
+          "xss",
+          "cookie_replay",
+          "sidejacking",
+          "session_fixation",
+          "session_prediction",
+          "other"
+        ],
+        "matrix": [
+          [
+            48,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0,
+            0,
+            0,
+            4,
+            0,
+            0
+          ],
+          [
+            31,
+            0,
+            0,
+            0,
+            0,
+            0,
+            9,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "dataset_scores": {
+        "sqli": 0.9971,
+        "xss": 0.9938,
+        "session_binary": 0.9932,
+        "session_multiclass": 0.983
+      },
+      "misses": {
+        "sqli": [],
+        "xss": [],
+        "session": [
+          {
+            "request_id": 2648,
+            "true_label": "sidejacking",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2650,
+            "true_label": "session_fixation",
+            "path": "/register",
+            "payload_snippet": "{\"username\": \"fix_1608\", \"email\": \"fix_1608@example.com\", \"password\": \"***\"}",
+            "caught": 0
+          },
+          {
+            "request_id": 2656,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2657,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2658,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2659,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2660,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2661,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2662,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2663,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2664,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2665,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2666,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2667,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2668,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2669,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2670,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2671,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2672,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2673,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2674,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2675,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2676,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2677,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2678,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2679,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2680,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2681,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2682,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2686,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2688,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2691,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          },
+          {
+            "request_id": 2692,
+            "true_label": "session_prediction",
+            "path": "/home",
+            "payload_snippet": "{}",
+            "caught": 0
+          }
+        ]
+      }
+    }
+  },
+  "mode_summary": {
+    "MONITOR": {
+      "false_alarm_rate": 0.0,
+      "total_alerts": 20,
+      "sqli_recall": null,
+      "xss_recall": null,
+      "vuln_page_outcomes": {
+        "tested": 0,
+        "succeeded": 0,
+        "blocked": 0
+      }
+    }
+  }
+}

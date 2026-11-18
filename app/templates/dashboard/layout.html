@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CyberMirror SOC console — alerts, overview, control, evaluation">
+  <title>{% block title %}Console — CyberMirror{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="dash-body">
+  <div class="dash-shell">
+    <aside class="dash-sidebar" id="dashSidebar">
+      <div class="dash-brand">
+        <a href="{{ url_for('dashboard.overview') }}">CyberMirror</a>
+        <span class="dash-brand-sub">SOC Console</span>
+      </div>
+      <nav class="dash-nav">
+        <a class="{% if active == 'overview' %}active{% endif %}" href="{{ url_for('dashboard.overview') }}">Overview</a>
+        <a class="{% if active == 'alerts' %}active{% endif %}" href="{{ url_for('dashboard.alerts_page') }}">Alerts</a>
+        <a class="{% if active == 'sessions' %}active{% endif %}" href="{{ url_for('dashboard.sessions_page') }}">Sessions</a>
+        <a class="{% if active == 'control' %}active{% endif %}" href="{{ url_for('dashboard.control_page') }}">Control</a>
+        <a class="{% if active == 'evaluation' %}active{% endif %}" href="{{ url_for('dashboard.evaluation_page') }}">Evaluation</a>
+      </nav>
+      <div class="dash-sidebar-foot">
+        <a href="{{ url_for('auth.index') }}" target="_blank" rel="noopener">Open OrbitMart twin</a>
+        <a href="{{ url_for('dashboard.logout') }}">Sign out</a>
+      </div>
+    </aside>
+
+    <div class="dash-main">
+      <header class="dash-topbar">
+        <button type="button" class="dash-menu-btn" id="dashMenuBtn" aria-label="Toggle navigation">☰</button>
+        <h1 class="dash-page-title">{% block page_title %}Console{% endblock %}</h1>
+        <div class="dash-topbar-meta">
+          <span class="pill" id="modePill" data-mode="">MODE —</span>
+          <span class="muted refresh-hint" id="refreshHint"><span class="live-dot" aria-hidden="true"></span> Live · 5s</span>
+        </div>
+      </header>
+
+      <main class="dash-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-list">
+              {% for category, message in messages %}
+                <li class="flash {{ category }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

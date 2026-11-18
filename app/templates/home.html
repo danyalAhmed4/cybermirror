@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Account — OrbitMart{% endblock %}
+{% block content %}
+<section class="om-card">
+  <h1>Welcome{% if username %}, {{ username }}{% endif %}</h1>
+  <p class="om-muted">Your OrbitMart workspace session is active. Browse the catalog or manage your account.</p>
+
+  <div class="om-status" aria-label="Session status">
+    <span class="om-chip">Twin mode <strong>{{ detection_mode or "—" }}</strong></span>
+    <span class="om-chip">Security alerts <strong>{{ alert_count }}</strong></span>
+    <span class="om-chip">Catalog <strong>{% if vulnerable_page_enabled %}Open{% else %}Closed{% endif %}</strong></span>
+  </div>
+
+  <div class="om-actions">
+    {% if vulnerable_page_enabled %}
+      <a class="om-btn" href="{{ url_for('vulnerable.search') }}">Browse catalog</a>
+    {% endif %}
+    <a class="om-btn om-btn-outline" href="{{ url_for('auth.logout') }}">Sign out</a>
+  </div>
+</section>
+{% endblock %}

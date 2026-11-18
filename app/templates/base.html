@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OrbitMart — cloud tools marketplace for teams.">
+  <title>{% block title %}OrbitMart{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon-orbit.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='orbitmart.css') }}">
+</head>
+<body class="om-body {% block body_class %}{% endblock %}">
+  <header class="om-header">
+    <a class="om-brand" href="{{ url_for('auth.index') }}">Orbit<span>Mart</span></a>
+    <nav class="om-nav">
+      {% if vulnerable_page_enabled %}
+        <a href="{{ url_for('vulnerable.search') }}">Catalog</a>
+      {% endif %}
+      {% if session.get('logged_in') %}
+        <a href="{{ url_for('auth.home') }}">Account</a>
+        <a href="{{ url_for('auth.logout') }}">Sign out</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Sign in</a>
+        <a class="om-cta" href="{{ url_for('auth.register') }}">Create account</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="{% block main_class %}om-main{% endblock %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for category, message in messages %}
+            <li class="flash {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

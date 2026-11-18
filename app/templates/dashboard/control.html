@@ -1,0 +1,38 @@
+{% extends "dashboard/layout.html" %}
+{% block page_title %}Control{% endblock %}
+{% block content %}
+<section class="control-grid" data-dashboard-page="control">
+  <article class="dash-card">
+    <h2>Detection mode</h2>
+    <p class="muted">OFF skips scoring. MONITOR writes alerts. BLOCK also returns HTTP 403 on OrbitMart.</p>
+    <div class="mode-switch" id="modeSwitch" role="group" aria-label="Detection mode">
+      <button type="button" class="mode-btn {% if mode == 'OFF' %}active{% endif %}" data-mode="OFF">OFF</button>
+      <button type="button" class="mode-btn {% if mode == 'MONITOR' %}active{% endif %}" data-mode="MONITOR">MONITOR</button>
+      <button type="button" class="mode-btn {% if mode == 'BLOCK' %}active{% endif %}" data-mode="BLOCK">BLOCK</button>
+    </div>
+    <p class="status-line" id="modeStatus">Current: <strong>{{ mode }}</strong></p>
+  </article>
+
+  <article class="dash-card">
+    <h2>OrbitMart catalog target</h2>
+    <p class="muted">Enable the intentional SQLi catalog on the user twin (fake SQLite inventory only).</p>
+    <label class="toggle-row">
+      <input type="checkbox" id="vulnToggle" {% if vulnerable_enabled %}checked{% endif %}>
+      <span>OrbitMart catalog (/search)</span>
+    </label>
+    <p class="status-line" id="vulnStatus">
+      {% if vulnerable_enabled %}Enabled{% else %}Disabled{% endif %}
+    </p>
+  </article>
+
+  <article class="dash-card">
+    <h2>Feedback loop</h2>
+    <p class="muted">Clear monitoring data before a clean eval, or export evidence for SOC reporting.</p>
+    <div class="btn-row">
+      <button type="button" class="btn btn-danger" id="clearLogsBtn">Clear logs</button>
+      <a class="btn" id="exportCsvBtn" href="{{ url_for('dashboard.api_export_csv') }}">Export CSV</a>
+    </div>
+    <p class="status-line" id="dataStatus"></p>
+  </article>
+</section>
+{% endblock %}

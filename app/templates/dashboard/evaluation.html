@@ -1,0 +1,70 @@
+{% extends "dashboard/layout.html" %}
+{% block page_title %}Evaluation{% endblock %}
+{% block content %}
+<section class="dash-card" data-dashboard-page="evaluation">
+  <div class="eval-header">
+    <div>
+      <h2>Evaluation</h2>
+      <p class="muted" id="evalMeta">Loading saved results from <code>results/evaluation.json</code>…</p>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn" id="evalRefreshBtn">Refresh</button>
+    </div>
+  </div>
+
+  <h3 class="eval-subhead">Per-attack metrics</h3>
+  <div class="table-wrap">
+    <table class="dash-table" id="evalMetricsTable">
+      <thead>
+        <tr>
+          <th>Attack type</th>
+          <th>Sent</th>
+          <th>Caught</th>
+          <th>Missed</th>
+          <th>Recall</th>
+          <th>Precision</th>
+          <th>Dataset score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="7" class="muted">No evaluation file yet. Run <code>python evaluation/evaluate.py</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="eval-grid">
+    <article class="dash-card inner-card">
+      <h3>False alarms &amp; SQLi styles</h3>
+      <ul class="eval-list" id="evalSideStats">
+        <li class="muted">Waiting for data…</li>
+      </ul>
+    </article>
+    <article class="dash-card inner-card">
+      <h3>Mode summary</h3>
+      <div class="table-wrap">
+        <table class="dash-table" id="evalModeTable">
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Alerts</th>
+              <th>FAR</th>
+              <th>SQLi recall</th>
+              <th>XSS recall</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="muted">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+
+  <h3 class="eval-subhead">Confusion matrix</h3>
+  <div class="chart-wrap eval-cm-wrap">
+    <canvas id="chartConfusion" height="220"></canvas>
+  </div>
+  <p class="muted" id="evalCmHint">Rows = true label family, columns = predicted (alert family or benign).</p>
+</section>
+{% endblock %}

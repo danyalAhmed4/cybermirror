@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Catalog — OrbitMart{% endblock %}
+{% block content %}
+<div class="om-banner" role="status">
+  Live catalog search — lab twin target (fake inventory only).
+</div>
+
+<section class="om-card">
+  <h1>Product catalog</h1>
+  <p class="om-muted">Lab SQLi sink for CyberMirror. Live queries are scored by the same TF-IDF model trained on <code>Modified_SQL_Dataset.csv</code> — attack traffic should use that distribution.</p>
+
+  <form method="GET" action="{{ url_for('vulnerable.search') }}" class="search-form">
+    <label for="q">Search catalog</label>
+    <input id="q" name="q" type="text" value="{{ q }}" placeholder="catalog term or SQL-like probe" autocomplete="off">
+    <button class="om-btn" type="submit">Search</button>
+  </form>
+
+  {% if error %}
+    <div class="db-error" role="alert">
+      <strong>Search failed.</strong>
+      <p class="om-muted" style="margin:0.4rem 0 0;">The catalog query could not complete. Operators may see this in the CyberMirror console.</p>
+    </div>
+  {% endif %}
+
+  {% if q != '' and not error %}
+    <h2 class="results-heading">Results</h2>
+    {% if rows %}
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              {% for col in columns %}
+                <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                {% for col in columns %}
+                  <td>{{ row[col] }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="om-muted">No matching products.</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

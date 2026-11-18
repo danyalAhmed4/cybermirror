@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Request blocked — OrbitMart{% endblock %}
+{% block content %}
+<section class="om-card">
+  <h1>Request blocked</h1>
+  <p>CyberMirror protection stopped this request before it reached OrbitMart.</p>
+
+  <dl class="blocked-meta">
+    <dt>Detected as</dt>
+    <dd>{{ attack_type or "unknown" }}</dd>
+    <dt>Confidence</dt>
+    <dd>{% if probability is not none %}{{ "%.1f"|format(probability * 100) }}%{% else %}—{% endif %}</dd>
+    <dt>Mode</dt>
+    <dd>{{ mode or "BLOCK" }}</dd>
+  </dl>
+
+  <div class="om-actions">
+    <a class="om-btn" href="{{ url_for('auth.index') }}">Back to OrbitMart</a>
+  </div>
+</section>
+{% endblock %}
