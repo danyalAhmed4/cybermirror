@@ -5,6 +5,10 @@ import csv
 import io
 import json
 import os
+import subprocess
+import sys
+import threading
+import time
 from functools import wraps
 
 from flask import (
@@ -23,6 +27,9 @@ from flask import (
 from app.monitoring.store import get_store
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
+
+_attack_lock = threading.Lock()
+_attack_running = False
 
 
 def admin_required(view):
@@ -212,6 +219,231 @@ def api_clear_logs():
     store = get_store()
     store.clear_logs()
     return jsonify({"ok": True})
+
+
+@dashboard_bp.route("/api/run-attacks", methods=["POST"])
+@admin_required
+def api_run_attacks():
+    """
+    Run the standard local lab attack suite against this Flask instance only.
+
+    Equivalent to:
+      python -m attacker.normal_traffic --count 40 --events-file …
+      python -m attacker.sqli_attack --events-file …
+      python -m attacker.xss_attack --events-file …
+      python -m attacker.session_attacks --events-file …
+      python -m evaluation.evaluate --from-db
+
+    Each attacker step writes a JSONL under results/runs/ for Attack Viz replay.
+    """
+    global _attack_running
+
+    if not _attack_lock.acquire(blocking=False):
+        return jsonify({"ok": False, "error": "Attack suite already running"}), 409
+    if _attack_running:
+        _attack_lock.release()
+        return jsonify({"ok": False, "error": "Attack suite already running"}), 409
+    _attack_running = True
+
+    port = int(current_app.config.get("FLASK_PORT") or 5000)
+    base_url = f"http://127.0.0.1:{port}"
+    root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+    py = sys.executable
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    runs_dir = os.path.join(root, "results", "runs")
+    os.makedirs(runs_dir, exist_ok=True)
+    # Keep only this suite's recordings — drop older Viz JSONL files.
+    for name in os.listdir(runs_dir):
+        if name.endswith(".jsonl"):
+            try:
+                os.remove(os.path.join(runs_dir, name))
+            except OSError:
+                pass
+
+    def _events_path(label: str) -> str:
+        return os.path.join(runs_dir, f"control_{stamp}_{label}.jsonl")
+
+    viz_runs = {
+        "normal_traffic": _events_path("normal"),
+        "sqli_attack": _events_path("sqli"),
+        "xss_attack": _events_path("xss"),
+        "session_attacks": _events_path("session"),
+    }
+
+    steps = [
+        (
+            "normal_traffic",
+            [
+                py,
+                "-m",
+                "attacker.normal_traffic",
+                "--base-url",
+                base_url,
+                "--count",
+                "40",
+                "--events-file",
+                viz_runs["normal_traffic"],
+            ],
+        ),
+        (
+            "sqli_attack",
+            [
+                py,
+                "-m",
+                "attacker.sqli_attack",
+                "--base-url",
+                base_url,
+                "--events-file",
+                viz_runs["sqli_attack"],
+            ],
+        ),
+        (
+            "xss_attack",
+            [
+                py,
+                "-m",
+                "attacker.xss_attack",
+                "--base-url",
+                base_url,
+                "--events-file",
+                viz_runs["xss_attack"],
+            ],
+        ),
+        (
+            "session_attacks",
+            [
+                py,
+                "-m",
+                "attacker.session_attacks",
+                "--base-url",
+                base_url,
+                "--events-file",
+                viz_runs["session_attacks"],
+            ],
+        ),
+    ]
+
+    results = []
+    started = time.time()
+    try:
+        for name, cmd in steps:
+            step_started = time.time()
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    timeout=600,
+                    check=False,
+                )
+                entry = {
+                    "step": name,
+                    "ok": proc.returncode == 0,
+                    "returncode": proc.returncode,
+                    "seconds": round(time.time() - step_started, 1),
+                    "stderr_tail": (proc.stderr or "")[-400:],
+                }
+                if name in viz_runs:
+                    entry["events_file"] = os.path.relpath(viz_runs[name], root)
+                results.append(entry)
+                if proc.returncode != 0:
+                    return jsonify(
+                        {
+                            "ok": False,
+                            "error": f"{name} exited with code {proc.returncode}",
+                            "base_url": base_url,
+                            "elapsed_seconds": round(time.time() - started, 1),
+                            "results": results,
+                            "viz_runs": {
+                                k: os.path.relpath(v, root) for k, v in viz_runs.items()
+                            },
+                        }
+                    ), 500
+            except subprocess.TimeoutExpired:
+                results.append(
+                    {
+                        "step": name,
+                        "ok": False,
+                        "returncode": None,
+                        "seconds": round(time.time() - step_started, 1),
+                        "stderr_tail": "timeout",
+                    }
+                )
+                return jsonify(
+                    {
+                        "ok": False,
+                        "error": f"{name} timed out",
+                        "base_url": base_url,
+                        "elapsed_seconds": round(time.time() - started, 1),
+                        "results": results,
+                        "viz_runs": {
+                            k: os.path.relpath(v, root) for k, v in viz_runs.items()
+                        },
+                    }
+                ), 500
+
+        # Score the labeled traffic just written to monitor.db
+        eval_started = time.time()
+        db_path = get_store().db_path
+        eval_cmd = [
+            py,
+            "-m",
+            "evaluation.evaluate",
+            "--from-db",
+            "--db",
+            db_path,
+        ]
+        eval_proc = subprocess.run(
+            eval_cmd,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+        results.append(
+            {
+                "step": "evaluate",
+                "ok": eval_proc.returncode == 0,
+                "returncode": eval_proc.returncode,
+                "seconds": round(time.time() - eval_started, 1),
+                "stderr_tail": (eval_proc.stderr or "")[-400:],
+            }
+        )
+        if eval_proc.returncode != 0:
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "Attack suite finished, but evaluation failed",
+                    "base_url": base_url,
+                    "elapsed_seconds": round(time.time() - started, 1),
+                    "results": results,
+                    "evaluated": False,
+                    "viz_runs": {
+                        k: os.path.relpath(v, root) for k, v in viz_runs.items()
+                    },
+                }
+            ), 500
+    finally:
+        _attack_running = False
+        _attack_lock.release()
+
+    viz_rel = {k: os.path.relpath(v, root) for k, v in viz_runs.items()}
+    return jsonify(
+        {
+            "ok": True,
+            "base_url": base_url,
+            "elapsed_seconds": round(time.time() - started, 1),
+            "results": results,
+            "evaluated": True,
+            "viz_runs": viz_rel,
+            "message": (
+                "Attack suite + evaluation finished. "
+                "Check Alerts, Evaluation, and Attack Viz (new control_* runs)."
+            ),
+        }
+    )
 
 
 @dashboard_bp.route("/api/export")

@@ -48,9 +48,7 @@
   }
 
   function renderRunLists(data) {
-    const sampleList = $("sampleList");
     const recordedList = $("recordedList");
-    sampleList.innerHTML = "";
     recordedList.innerHTML = "";
 
     const makeItem = (run) => {
@@ -59,18 +57,16 @@
       btn.type = "button";
       btn.dataset.runId = run.id;
       btn.innerHTML = `${escapeHtml(run.title)}<span class="run-meta">${escapeHtml(
-        [run.suite, run.steps ? `${run.steps} steps` : null, run.sample ? "sample" : null]
-          .filter(Boolean)
-          .join(" · ")
+        [run.suite, run.steps ? `${run.steps} steps` : null].filter(Boolean).join(" · ")
       )}</span>`;
       btn.addEventListener("click", () => loadRun(run.id));
       li.appendChild(btn);
       return li;
     };
 
-    (data.samples || []).forEach((r) => sampleList.appendChild(makeItem(r)));
     if ((data.recorded || []).length === 0) {
-      recordedList.innerHTML = '<li class="muted empty-hint">None yet — use --events-file</li>';
+      recordedList.innerHTML =
+        '<li class="muted empty-hint">None yet — use Control → Run attacks</li>';
     } else {
       data.recorded.forEach((r) => recordedList.appendChild(makeItem(r)));
     }
@@ -392,10 +388,9 @@
     try {
       const data = await fetchJSON("/viz/api/runs");
       renderRunLists(data);
-      const first =
-        (data.samples || []).find((r) => r.filename === "experiment_demo.jsonl") ||
-        (data.samples || [])[0];
+      const first = (data.recorded || [])[0];
       if (first) await loadRun(first.id);
+      else $("runSub").textContent = "No recorded runs yet — use Control → Run attacks.";
     } catch (err) {
       $("runSub").textContent = `Failed to load runs: ${err.message}`;
     }

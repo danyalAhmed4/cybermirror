@@ -27,12 +27,17 @@
 
   <article class="dash-card">
     <h2>Feedback loop</h2>
-    <p class="muted">Clear monitoring data before a clean eval, or export evidence for SOC reporting.</p>
+    <p class="muted">
+      Clear logs, export CSV, or run the local attack suite
+      (normal ×40 → SQLi → XSS → session → <code>evaluate --from-db</code>).
+    </p>
     <div class="btn-row">
       <button type="button" class="btn btn-danger" id="clearLogsBtn">Clear logs</button>
       <a class="btn" id="exportCsvBtn" href="{{ url_for('dashboard.api_export_csv') }}">Export CSV</a>
+      <button type="button" class="btn" id="runAttacksBtn">Run attacks</button>
     </div>
     <p class="status-line" id="dataStatus"></p>
+    <p class="status-line" id="attackStatus"></p>
   </article>
 </section>
 {% endblock %}

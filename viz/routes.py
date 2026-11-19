@@ -1,7 +1,7 @@
 """
 Visualization blueprint: replay structured attack-simulation JSONL events.
 
-Serves only local sample / recorded runs — no live attack execution from the UI.
+Serves recorded runs under results/runs/ — no live attack execution from the UI.
 """
 from __future__ import annotations
 
@@ -11,11 +11,10 @@ import re
 from datetime import datetime
 from typing import Any
 
-from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
+from flask import Blueprint, abort, jsonify, render_template, request
 
 _VIZ_DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.abspath(os.path.join(_VIZ_DIR, ".."))
-SAMPLE_DIR = os.path.join(_VIZ_DIR, "sample_runs")
 RUNS_DIR = os.path.join(_ROOT, "results", "runs")
 
 viz_bp = Blueprint(
@@ -31,7 +30,6 @@ _SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 def _ensure_dirs() -> None:
-    os.makedirs(SAMPLE_DIR, exist_ok=True)
     os.makedirs(RUNS_DIR, exist_ok=True)
 
 
@@ -99,20 +97,17 @@ def _peek_run(path: str) -> dict[str, Any]:
 
 
 def _resolve_run(run_id: str) -> tuple[str, str]:
-    """Return (absolute_path, source) for source:filename or bare filename."""
+    """Return (absolute_path, source) for recorded:filename or bare filename."""
     _ensure_dirs()
-    source = "sample"
+    source = "recorded"
     name = run_id
     if ":" in run_id:
         source, name = run_id.split(":", 1)
     if not _SAFE_NAME.match(name) or not name.endswith(".jsonl"):
         abort(400, description="Invalid run id")
-    if source == "sample":
-        path = os.path.join(SAMPLE_DIR, name)
-    elif source == "recorded":
-        path = os.path.join(RUNS_DIR, name)
-    else:
-        abort(404)
+    if source != "recorded":
+        abort(404, description="Only recorded runs are available")
+    path = os.path.join(RUNS_DIR, name)
     if not os.path.isfile(path):
         abort(404)
     return path, source
@@ -201,9 +196,8 @@ def index():
 
 @viz_bp.route("/api/runs")
 def api_runs():
-    samples = _list_jsonl(SAMPLE_DIR, source="sample")
     recorded = _list_jsonl(RUNS_DIR, source="recorded")
-    return jsonify({"samples": samples, "recorded": recorded, "all": samples + recorded})
+    return jsonify({"samples": [], "recorded": recorded, "all": recorded})
 
 
 @viz_bp.route("/api/runs/<path:run_id>")
@@ -224,7 +218,12 @@ def api_run(run_id: str):
 @viz_bp.route("/api/compare")
 def api_compare():
     """Return mode-level scores from an experiment-style run for side-by-side view."""
-    run_id = request.args.get("run", "sample:experiment_demo.jsonl")
+    run_id = request.args.get("run")
+    if not run_id:
+        recorded = _list_jsonl(RUNS_DIR, source="recorded")
+        if not recorded:
+            return jsonify({"run": None, "modes": {}, "summary": _summarize([])})
+        run_id = recorded[0]["id"]
     path, source = _resolve_run(run_id)
     events = _load_events(path)
     by_mode: dict[str, Any] = {}
@@ -255,10 +254,3 @@ def api_compare():
             "summary": _summarize(events),
         }
     )
-
-
-@viz_bp.route("/sample_runs/<path:filename>")
-def sample_file(filename: str):
-    if not _SAFE_NAME.match(filename):
-        abort(400)
-    return send_from_directory(SAMPLE_DIR, filename)

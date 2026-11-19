@@ -415,6 +415,12 @@ a.btn:hover {
 
 .btn-danger:hover { background: #ff7878; color: #fff; }
 
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .status-line {
   margin: 0.85rem 0 0;
   color: var(--muted);

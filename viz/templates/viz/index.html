@@ -17,14 +17,11 @@
         <a href="{{ url_for('viz.index') }}">CyberMirror</a>
         <span class="viz-brand-sub">Attack Viz</span>
       </div>
-      <p class="viz-side-note">Replay sandboxed simulation events. No live attacks from this UI.</p>
-
-      <h2 class="viz-side-heading">Sample runs</h2>
-      <ul class="viz-run-list" id="sampleList"></ul>
+      <p class="viz-side-note">Replay recorded attack runs from Control / CLI. No live attacks from this UI.</p>
 
       <h2 class="viz-side-heading">Recorded runs</h2>
       <ul class="viz-run-list" id="recordedList">
-        <li class="muted empty-hint">None yet — use --events-file</li>
+        <li class="muted empty-hint">None yet — use Control → Run attacks</li>
       </ul>
 
       <div class="viz-sidebar-foot">
@@ -37,7 +34,7 @@
       <header class="viz-topbar">
         <div>
           <h1 class="viz-page-title" id="runTitle">Select a run</h1>
-          <p class="viz-page-sub" id="runSub">Load a sample to demo without running attackers.</p>
+          <p class="viz-page-sub" id="runSub">Pick a recorded run from the list to replay.</p>
         </div>
         <div class="viz-topbar-meta">
           <span class="pill" id="suitePill">SUITE —</span>

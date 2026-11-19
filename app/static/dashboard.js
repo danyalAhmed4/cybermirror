@@ -18,6 +18,29 @@
       .replace(/"/g, "&quot;");
   }
 
+  /** Format ISO timestamps for display in Pakistan Standard Time. */
+  function formatPkt(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    try {
+      return (
+        new Intl.DateTimeFormat("en-PK", {
+          timeZone: "Asia/Karachi",
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        }).format(d) + " PKT"
+      );
+    } catch (_) {
+      return String(iso);
+    }
+  }
+
   async function getJson(url) {
     const res = await fetch(url, { credentials: "same-origin" });
     if (res.status === 401 || res.redirected) {
@@ -318,6 +341,49 @@
         }
       });
     }
+
+    const runAttacksBtn = $("#runAttacksBtn");
+    if (runAttacksBtn) {
+      runAttacksBtn.addEventListener("click", async () => {
+        if (
+          !window.confirm(
+            "Run local lab attack suite against this server?\n\n" +
+              "normal ×40 → SQLi → XSS → session → evaluate\n" +
+              "Also records Attack Viz JSONL under results/runs/.\n" +
+              "This takes about 1–3 minutes."
+          )
+        ) {
+          return;
+        }
+        const status = $("#attackStatus");
+        runAttacksBtn.disabled = true;
+        if (status) {
+          status.textContent =
+            "Running attacks + evaluation + Viz recording… leave this tab open.";
+        }
+        try {
+          const data = await postJson("/dashboard/api/run-attacks", {});
+          const steps = (data.results || [])
+            .map((r) => `${r.step}${r.ok ? "✓" : "✗"}`)
+            .join(" · ");
+          const vizCount = data.viz_runs
+            ? Object.keys(data.viz_runs).length
+            : 0;
+          if (status) {
+            status.textContent =
+              data.message ||
+              `Done in ${data.elapsed_seconds || "?"}s — ${steps}.`;
+            if (vizCount) {
+              status.textContent += ` · ${vizCount} Viz run file(s) → /viz/`;
+            }
+          }
+        } catch (err) {
+          if (status) status.textContent = `Error: ${err.message}`;
+        } finally {
+          runAttacksBtn.disabled = false;
+        }
+      });
+    }
   }
 
   async function refreshControl() {
@@ -423,7 +489,7 @@
     }
     const report = payload.report || {};
     if (meta) {
-      meta.textContent = `Generated ${report.generated_at || "—"} · primary mode ${
+      meta.textContent = `Generated ${formatPkt(report.generated_at)} · primary mode ${
         report.primary_mode || report.mode || "—"
       }`;
     }
