@@ -14,6 +14,9 @@ def create_app(config_class=Config):
         static_folder=os.path.join(base_dir, "static"),
     )
     app.config.from_object(config_class)
+    # Lab UX: pick up template edits without restart (debug is usually off).
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.jinja_env.auto_reload = True
 
     # Request logging (SQLite monitor.db); skips /static and /dashboard
     from app.monitoring.logger import init_request_logging

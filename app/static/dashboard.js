@@ -411,7 +411,6 @@
   }
 
   /* ---------- Evaluation ---------- */
-  let confusionChart = null;
   const ATTACK_ORDER = [
     "sqli",
     "xss",
@@ -442,41 +441,80 @@
     return null;
   }
 
+  function cmShortLabel(label) {
+    const map = {
+      normal: "normal",
+      sqli: "sqli",
+      xss: "xss",
+      cookie_replay: "replay",
+      sidejacking: "sidejack",
+      session_fixation: "fixation",
+      session_prediction: "predict",
+      other: "other",
+      hijacked: "hijack",
+    };
+    return map[label] || String(label || "").slice(0, 10);
+  }
+
   function renderConfusion(cm) {
-    if (typeof Chart === "undefined") return;
-    const canvas = $("#chartConfusion");
-    if (!canvas || !cm || !cm.labels || !cm.matrix) return;
+    const table = $("#evalConfusionTable");
+    if (!table || !cm || !cm.labels || !cm.matrix) return;
     const labels = cm.labels;
     const matrix = cm.matrix;
-    // Chart.js matrix-like: one dataset per predicted class (stacked bars by actual)
-    const palette = [NAVY, BLUE_GREY, BLUE_GREY_2, "#3d4f63", "#6f7f90", "#9aa8b5", "#c5ced6"];
-    const datasets = labels.map((pred, j) => ({
-      label: pred,
-      data: matrix.map((row) => row[j] || 0),
-      backgroundColor: palette[j % palette.length],
-      stack: "cm",
-    }));
-    if (confusionChart) confusionChart.destroy();
-    confusionChart = new Chart(canvas, {
-      type: "bar",
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "bottom" },
-          title: { display: true, text: "True label (x) vs predicted (stacked)" },
-        },
-        scales: {
-          x: { stacked: true, title: { display: true, text: "True label" } },
-          y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
-        },
-      },
-    });
+    let max = 0;
+    for (const row of matrix) {
+      for (const v of row) max = Math.max(max, Number(v) || 0);
+    }
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
+    if (thead) {
+      thead.innerHTML = `<tr><th class="cm-corner">True \\ Pred</th>${labels
+        .map((l) => `<th title="${esc(l)}">${esc(cmShortLabel(l))}</th>`)
+        .join("")}</tr>`;
+    }
+    if (tbody) {
+      tbody.innerHTML = labels
+        .map((actual, i) => {
+          const row = matrix[i] || [];
+          const cells = labels
+            .map((_, j) => {
+              const n = Number(row[j] || 0);
+              const intensity = max > 0 ? n / max : 0;
+              const diag = i === j ? " cm-diag" : "";
+              const style =
+                n > 0
+                  ? ` style="background: rgba(255, 138, 61, ${0.12 + intensity * 0.55})"`
+                  : "";
+              return `<td class="cm-cell${diag}"${style}>${n}</td>`;
+            })
+            .join("");
+          return `<tr><th scope="row" title="${esc(actual)}">${esc(
+            cmShortLabel(actual)
+          )}</th>${cells}</tr>`;
+        })
+        .join("");
+    }
+  }
+
+  function ensureMetricHelp() {
+    const table = $("#evalMetricsTable");
+    if (!table) return;
+    // Drop duplicates from older template + JS inserts
+    document.querySelectorAll(".eval-metric-help").forEach((el) => el.remove());
+    const help = document.createElement("ul");
+    help.id = "evalMetricHelp";
+    help.className = "eval-metric-help";
+    help.innerHTML = `
+      <li><strong>Recall</strong> — of the attacks we sent, what % did we catch? (Caught ÷ Sent)</li>
+      <li><strong>Precision</strong> — of the alerts we raised for this type, what % were really that attack?</li>
+      <li><strong>F1</strong> — combined score of recall and precision</li>
+    `;
+    table.parentElement?.parentElement?.insertBefore(help, table.parentElement);
   }
 
   async function refreshEvaluation() {
     const meta = $("#evalMeta");
+    ensureMetricHelp();
     let payload;
     try {
       payload = await getJson("/dashboard/api/evaluation");
@@ -507,6 +545,7 @@
           <td>${esc(s.missed ?? 0)}</td>
           <td>${fmtRate(s.recall)}</td>
           <td>${fmtRate(s.precision)}</td>
+          <td>${fmtRate(s.f1)}</td>
           <td>${ref == null ? "—" : Number(ref).toFixed(4)}</td>
         </tr>`;
       }).join("");
@@ -515,17 +554,25 @@
     const side = $("#evalSideStats");
     if (side) {
       const totals = report.totals || {};
-      const styles = report.sqli_compact_vs_padded || {};
-      const compact = styles.compact || {};
-      const padded = styles.padded || {};
       const ds = report.dataset_scores || {};
+      const sm = report.summary_metrics || {};
+      const vuln = report.vuln_page_outcomes || {};
+      const vulnTested = Number(vuln.tested || 0);
+      let vulnLine = "";
+      if (vulnTested > 0) {
+        vulnLine = `<li>SQLi /search blocked: <strong>${fmtRate(sm.sqli_search_block_rate)}</strong>
+          (${esc(vuln.blocked ?? 0)} / ${esc(vulnTested)}) · succeeded
+          ${esc(vuln.succeeded ?? 0)}</li>`;
+      }
       side.innerHTML = `
+        <li>Requests / alerts: <strong>${esc(totals.requests ?? 0)}</strong> /
+          <strong>${esc(totals.alerts ?? 0)}</strong></li>
+        <li>Overall attack recall: <strong>${fmtRate(sm.overall_attack_recall)}</strong>
+          (${esc(sm.overall_attacks_caught ?? 0)} / ${esc(sm.overall_attacks_sent ?? 0)})</li>
         <li>False alarm rate (normal): <strong>${fmtRate(totals.false_alarm_rate)}</strong>
           (${esc(totals.normal_with_alert ?? 0)} / ${esc(totals.normal_requests ?? 0)})</li>
-        <li>SQLi compact detection: <strong>${fmtRate(compact.detection_rate)}</strong>
-          (${esc(compact.caught ?? 0)} / ${esc(compact.sent ?? 0)})</li>
-        <li>SQLi padded detection: <strong>${fmtRate(padded.detection_rate)}</strong>
-          (${esc(padded.caught ?? 0)} / ${esc(padded.sent ?? 0)})</li>
+        <li>Specificity (normal clean): <strong>${fmtRate(sm.specificity)}</strong></li>
+        ${vulnLine}
         <li>Dataset refs — SQLi ${esc(ds.sqli)}, XSS ${esc(ds.xss)},
           session binary ${esc(ds.session_binary)}, multiclass ${esc(ds.session_multiclass)}</li>
       `;

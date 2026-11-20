@@ -495,6 +495,23 @@ a.btn:hover {
   margin-bottom: 0.5rem;
 }
 
+.eval-metric-help {
+  margin: 0.35rem 0 1rem;
+  padding: 0.75rem 0.9rem 0.75rem 1.35rem;
+  line-height: 1.55;
+  font-size: 0.9rem;
+  color: var(--muted);
+  list-style: disc;
+  background: rgba(255, 138, 61, 0.08);
+  border: 1px solid rgba(255, 138, 61, 0.28);
+  border-radius: 10px;
+}
+
+.eval-metric-help strong {
+  color: #ffb074;
+  font-weight: 700;
+}
+
 .eval-subhead {
   margin: 1.4rem 0 0.65rem;
   color: var(--text);
@@ -518,9 +535,45 @@ a.btn:hover {
   line-height: 1.6;
 }
 
+.eval-cm-card {
+  margin-top: 1rem;
+}
+
 .eval-cm-wrap {
-  min-height: 340px;
-  margin-top: 0.5rem;
+  margin-top: 0.65rem;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.eval-cm-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 0.78rem;
+  border-collapse: collapse;
+}
+
+.eval-cm-table th,
+.eval-cm-table td {
+  text-align: center;
+  padding: 0.45rem 0.25rem;
+  word-break: break-word;
+}
+
+.eval-cm-table .cm-corner,
+.eval-cm-table th[scope="row"] {
+  text-align: left;
+  font-weight: 600;
+  width: 5.5rem;
+}
+
+.eval-cm-table .cm-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.eval-cm-table .cm-diag {
+  outline: 1px solid rgba(255, 138, 61, 0.55);
+  font-weight: 700;
 }
 
 .dash-login-body {

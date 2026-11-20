@@ -293,6 +293,8 @@ def api_run_attacks():
                 "attacker.sqli_attack",
                 "--base-url",
                 base_url,
+                "--payload-source",
+                "test",
                 "--events-file",
                 viz_runs["sqli_attack"],
             ],

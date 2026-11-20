@@ -133,7 +133,9 @@ def _send(
     return response
 
 
-def run_attacks(base_url: str) -> tuple[Counter, Counter]:
+def run_attacks(
+    base_url: str, *, payload_source: str = "test"
+) -> tuple[Counter, Counter]:
     assert_safe_base_url(base_url)
     base = base_url.rstrip("/")
     attack_counts: Counter = Counter()
@@ -142,10 +144,13 @@ def run_attacks(base_url: str) -> tuple[Counter, Counter]:
     session.headers["User-Agent"] = (
         "CyberMirror-SQLiAttack/1.0 (+lab; dataset-aligned)"
     )
+    source = (payload_source or "test").strip().lower()
+    if source not in {"test", "train", "all", "ood"}:
+        source = "test"
 
     try:
-        sqli_payloads = load_sqli_attack_payloads(limit=24)
-        normal_search = load_sqli_normal_queries(limit=12)
+        sqli_payloads = load_sqli_attack_payloads(limit=24, split=source)  # type: ignore[arg-type]
+        normal_search = load_sqli_normal_queries(limit=12, split=source)  # type: ignore[arg-type]
     except Exception as exc:
         print(f"Dataset load failed ({exc}); using fallback payloads", file=sys.stderr)
         sqli_payloads = list(_FALLBACK_ATTACKS)
@@ -153,16 +158,17 @@ def run_attacks(base_url: str) -> tuple[Counter, Counter]:
 
     attack_payloads = expand_payloads(sqli_payloads)
     print(f"Target: {base}")
+    print(f"Payload source: {source}")
     print(
-        f"Attack payloads from training CSV: {len(sqli_payloads)} unique "
+        f"Attack payloads: {len(sqli_payloads)} unique "
         f"-> {len(attack_payloads)} after compact/padded"
     )
-    print(f"Normal searches from training CSV: {len(normal_search)}")
+    print(f"Normal searches: {len(normal_search)}")
     print()
     emit(
         "log",
         log=(
-            f"Target={base}; payloads={len(sqli_payloads)} unique "
+            f"Target={base}; source={source}; payloads={len(sqli_payloads)} unique "
             f"→ {len(attack_payloads)} compact/padded; normals={len(normal_search)}"
         ),
         vulnerability=vuln_for("sqli"),
@@ -238,12 +244,24 @@ def run_attacks(base_url: str) -> tuple[Counter, Counter]:
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Lab SQLi traffic aligned to Modified_SQL_Dataset.csv"
+        description=(
+            "Lab SQLi traffic. Default payloads are the held-out test split "
+            "(not the training rows)."
+        )
     )
     parser.add_argument(
         "--base-url",
         default=DEFAULT_BASE_URL,
         help=f"CyberMirror base URL (default: {DEFAULT_BASE_URL})",
+    )
+    parser.add_argument(
+        "--payload-source",
+        choices=("test", "train", "all", "ood"),
+        default="test",
+        help=(
+            "test=held-out CSV split (default); train=training rows; "
+            "all=full CSV; ood=obfuscated out-of-distribution payloads"
+        ),
     )
     add_events_arg(parser)
     return parser.parse_args(argv)
@@ -255,7 +273,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         args.events_file,
         suite="sqli",
         base_url=args.base_url,
-        meta={"cli": "python -m attacker.sqli_attack"},
+        meta={
+            "cli": "python -m attacker.sqli_attack",
+            "payload_source": args.payload_source,
+        },
     )
     emit(
         "command",
@@ -264,7 +285,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         vulnerability=vuln_for("sqli"),
     )
     try:
-        attack_counts, normal_counts = run_attacks(args.base_url)
+        attack_counts, normal_counts = run_attacks(
+            args.base_url, payload_source=args.payload_source
+        )
     except requests.RequestException as exc:
         print(f"Request failed: {exc}", file=sys.stderr)
         close_events(status="failed", score={"error": str(exc)})

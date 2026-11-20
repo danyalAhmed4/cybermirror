@@ -124,6 +124,13 @@ def _safe_div(num: float, den: float) -> Optional[float]:
     return num / den
 
 
+def _f1(precision: Optional[float], recall: Optional[float]) -> Optional[float]:
+    """Harmonic mean of precision and recall; null if either side is missing."""
+    if precision is None or recall is None:
+        return None
+    return _safe_div(2.0 * precision * recall, precision + recall)
+
+
 def _payload_snippet(req: dict[str, Any], *, limit: int = 160) -> str:
     """Short payload view from query string or form values for miss CSVs."""
     blob = (req.get("query_string") or "").strip()
@@ -268,6 +275,7 @@ def evaluate_db(db_path: str, *, mode: Optional[str] = None) -> dict[str, Any]:
             "alerts_raised": len(type_alerts),
             "recall": recall,
             "precision": precision,
+            "f1": _f1(precision, recall),
         }
 
     # Normal false alarms
@@ -277,6 +285,13 @@ def evaluate_db(db_path: str, *, mode: Optional[str] = None) -> dict[str, Any]:
         if alerts_by_request.get(int(r["id"])):
             normal_with_alert += 1
     false_alarm_rate = _safe_div(normal_with_alert, len(normal_reqs))
+
+    total_attack_sent = sum(int(s.get("attacks_sent") or 0) for s in per_type.values())
+    total_attack_caught = sum(int(s.get("caught") or 0) for s in per_type.values())
+    overall_attack_recall = _safe_div(total_attack_caught, total_attack_sent)
+    specificity = (
+        None if false_alarm_rate is None else max(0.0, 1.0 - float(false_alarm_rate))
+    )
 
     # SQLi compact vs padded
     def _sqli_style_rate(style: str) -> dict[str, Any]:
@@ -351,6 +366,18 @@ def evaluate_db(db_path: str, *, mode: Optional[str] = None) -> dict[str, Any]:
         elif 200 <= code < 400:
             vuln_success["succeeded"] += 1
 
+    tested = int(vuln_success.get("tested") or 0)
+    blocked = int(vuln_success.get("blocked") or 0)
+    succeeded = int(vuln_success.get("succeeded") or 0)
+    summary_metrics = {
+        "overall_attack_recall": overall_attack_recall,
+        "overall_attacks_sent": total_attack_sent,
+        "overall_attacks_caught": total_attack_caught,
+        "specificity": specificity,
+        "sqli_search_block_rate": _safe_div(blocked, tested),
+        "sqli_search_success_rate": _safe_div(succeeded, tested),
+    }
+
     return {
         "mode": mode,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -362,6 +389,7 @@ def evaluate_db(db_path: str, *, mode: Optional[str] = None) -> dict[str, Any]:
             "normal_with_alert": normal_with_alert,
             "false_alarm_rate": false_alarm_rate,
         },
+        "summary_metrics": summary_metrics,
         "per_attack_type": per_type,
         "sqli_compact_vs_padded": sqli_styles,
         "vuln_page_outcomes": vuln_success,
@@ -503,8 +531,10 @@ def run_experiment(base_url: str, db_path: str, *, quick: bool = True) -> dict[s
         "primary_mode": "MONITOR",
         "per_attack_type": monitor_block.get("per_attack_type", {}),
         "totals": monitor_block.get("totals", {}),
+        "summary_metrics": monitor_block.get("summary_metrics", {}),
         "sqli_compact_vs_padded": monitor_block.get("sqli_compact_vs_padded", {}),
         "confusion_matrix": monitor_block.get("confusion_matrix", {}),
+        "vuln_page_outcomes": monitor_block.get("vuln_page_outcomes", {}),
         "misses": monitor_block.get("misses")
         or {"sqli": [], "xss": [], "session": []},
         "mode_summary": {
@@ -540,6 +570,7 @@ def flatten_csv_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                         "missed": stats.get("missed"),
                         "recall": stats.get("recall"),
                         "precision": stats.get("precision"),
+                        "f1": stats.get("f1"),
                         "false_alarm_rate": (block.get("totals") or {}).get(
                             "false_alarm_rate"
                         ),
@@ -564,6 +595,7 @@ def flatten_csv_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                         "missed": (st.get("sent") or 0) - (st.get("caught") or 0),
                         "recall": st.get("detection_rate"),
                         "precision": "",
+                        "f1": "",
                         "false_alarm_rate": "",
                         "dataset_score_ref": DATASET_SCORES["sqli"],
                     }
@@ -582,6 +614,7 @@ def flatten_csv_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                 "missed": stats.get("missed"),
                 "recall": stats.get("recall"),
                 "precision": stats.get("precision"),
+                "f1": stats.get("f1"),
                 "false_alarm_rate": (report.get("totals") or {}).get(
                     "false_alarm_rate"
                 ),
@@ -655,6 +688,7 @@ def save_report(report: dict[str, Any]) -> tuple[str, str]:
         "missed",
         "recall",
         "precision",
+        "f1",
         "false_alarm_rate",
         "dataset_score_ref",
     ]
@@ -752,6 +786,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             "mode": mode or "current",
             "per_attack_type": single["per_attack_type"],
             "totals": single["totals"],
+            "summary_metrics": single.get("summary_metrics") or {},
             "sqli_compact_vs_padded": single["sqli_compact_vs_padded"],
             "confusion_matrix": single["confusion_matrix"],
             "vuln_page_outcomes": single["vuln_page_outcomes"],
@@ -768,6 +803,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                         "recall"
                     ),
                     "vuln_page_outcomes": single.get("vuln_page_outcomes"),
+                    "summary_metrics": single.get("summary_metrics"),
                 }
             },
         }
